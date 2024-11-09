@@ -916,11 +916,12 @@ class Exporter:
             import tensorflow as tf  # noqa
         except ImportError:
             suffix = "-macos" if MACOS else "-aarch64" if ARM64 else "" if cuda else "-cpu"
-            version = ">=2.17.0"
+            version = ">=2.0.0"
             check_requirements(f"tensorflow{suffix}{version}")
             import tensorflow as tf  # noqa
         check_requirements(
             (
+                "tensorflow>=2.17.0"
                 "keras",  # required by 'onnx2tf' package
                 "tf_keras",  # required by 'onnx2tf' package
                 "sng4onnx>=1.0.1",  # required by 'onnx2tf' package
