@@ -8,6 +8,7 @@ def test_export_tflite():
     file = model.export(format="tflite", imgsz=32)
     YOLO(file)(SOURCE, imgsz=32)
 
+
 def test_export_imx500_ptq():
     """Test YOLOv8n exports to imx500 format."""
     model = YOLO("yolov8n.pt")
