@@ -912,13 +912,6 @@ class Exporter:
     def export_saved_model(self, prefix=colorstr("TensorFlow SavedModel:")):
         """YOLO TensorFlow SavedModel export."""
         cuda = torch.cuda.is_available()
-        try:
-            import tensorflow as tf  # noqa
-        except ImportError:
-            suffix = "-macos" if MACOS else "-aarch64" if ARM64 else "" if cuda else "-cpu"
-            version = ">=2.0.0"
-            check_requirements(f"tensorflow{suffix}{version}")
-            import tensorflow as tf  # noqa
         check_requirements(
             (
                 "tensorflow>=2.17.0",
@@ -935,6 +928,13 @@ class Exporter:
             ),
             cmds="--extra-index-url https://pypi.ngc.nvidia.com",  # onnx_graphsurgeon only on NVIDIA
         )
+        try:
+            import tensorflow as tf  # noqa
+        except ImportError:
+            suffix = "-macos" if MACOS else "-aarch64" if ARM64 else "" if cuda else "-cpu"
+            version = ">=2.0.0"
+            check_requirements(f"tensorflow{suffix}{version}")
+            import tensorflow as tf  # noqa
 
         LOGGER.info(f"\n{prefix} starting export with tensorflow {tf.__version__}...")
         check_version(
