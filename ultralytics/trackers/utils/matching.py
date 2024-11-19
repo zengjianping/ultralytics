@@ -5,6 +5,7 @@ import scipy
 from scipy.spatial.distance import cdist
 
 from ultralytics.utils.metrics import batch_probiou, bbox_ioa
+from ultralytics.utils.metrics import pos_sim
 
 try:
     import lap  # for linear_assignment
@@ -100,6 +101,40 @@ def iou_distance(atracks: list, btracks: list) -> np.ndarray:
                 iou=True,
             )
     return 1 - ious  # cost matrix
+
+
+def pos_distance(atracks: list, btracks: list, dist_ratio) -> np.ndarray:
+    """
+    Compute cost based on position distance between tracks.
+
+    Args:
+        atracks (list[STrack] | list[np.ndarray]): List of tracks 'a' or bounding boxes.
+        btracks (list[STrack] | list[np.ndarray]): List of tracks 'b' or bounding boxes.
+
+    Returns:
+        (np.ndarray): Cost matrix computed based on IoU.
+
+    Examples:
+        Compute IoU distance between two sets of tracks
+        >>> atracks = [np.array([0, 0, 10, 10]), np.array([20, 20, 30, 30])]
+        >>> btracks = [np.array([5, 5, 15, 15]), np.array([25, 25, 35, 35])]
+        >>> cost_matrix = iou_distance(atracks, btracks)
+    """
+    if atracks and isinstance(atracks[0], np.ndarray) or btracks and isinstance(btracks[0], np.ndarray):
+        atlbrs = atracks
+        btlbrs = btracks
+    else:
+        atlbrs = [track.xywh for track in atracks]
+        btlbrs = [track.xywh for track in btracks]
+
+    sims = np.zeros((len(atlbrs), len(btlbrs)), dtype=np.float32)
+    if len(atlbrs) and len(btlbrs):
+        sims = pos_sim(
+            np.ascontiguousarray(atlbrs, dtype=np.float32),
+            np.ascontiguousarray(btlbrs, dtype=np.float32),
+            dist_ratio,
+        )
+    return 1 - sims  # cost matrix
 
 
 def embedding_distance(tracks: list, detections: list, metric: str = "cosine") -> np.ndarray:
