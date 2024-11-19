@@ -23,7 +23,7 @@ def parse_args():
 
 def split_dataset(dataset_dir):
     image_dir = os.path.join(dataset_dir, 'images')
-    autosplit(path=image_dir, weights=(0.9, 0.1, 0.0), annotated_only=True)
+    autosplit(path=image_dir, weights=(0.9, 0.1, 0.0), annotated_only=False)
 
 def check_dataset(dataset_dir):
     desc_file = os.path.join(dataset_dir, 'data.yaml')
@@ -50,7 +50,7 @@ def convert_coco_to_yolo(dataset_dir):
     images = {f'{x["id"]:d}': x for x in data["images"]}
 
     # Create image-annotations dict
-    imgToAnns = defaultdict(list)
+    imgToAnns = {x["id"]: list() for x in data["images"]}
     for ann in data["annotations"]:
         imgToAnns[ann["image_id"]].append(ann)
 
@@ -61,7 +61,7 @@ def convert_coco_to_yolo(dataset_dir):
         file_name:str = img["file_name"]
         npos = file_name.find('images/')
         if npos >= 0:
-            file_name = file_name[npos:]
+            file_name = file_name[npos+7:]
 
         bboxes = []
         for ann in anns:
@@ -119,7 +119,7 @@ def convert_yolo_to_coco(dataset_dir):
         file_name:str = img["file_name"]
         npos = file_name.find('images/')
         if npos >= 0:
-            file_name = file_name[npos:]
+            file_name = file_name[npos+7:]
 
         # Read
         lb_file:Path = (fn / file_name).with_suffix(".txt")
@@ -135,13 +135,14 @@ def convert_yolo_to_coco(dataset_dir):
                 assert lb.min() >= 0, f"negative label values {lb[lb < 0]}"
             
             for label in lb:
-                cls, point = label[0], label[1:]
+                cat_id, point = int(label[0]), label[1:]
                 tx, tw = point[[0,2]].astype(float) * w
                 ty, th = point[[1,3]].astype(float) * h
                 tx -= tw / 2
                 ty -= th / 2
                 bbox = [tx, ty, tw, th]
-                ann = dict(id=ann_id, image_id=int(img_id), category_id=cls+1, bbox=bbox, area=tw*th, is_crowd=0)
+                ann = dict(id=ann_id, image_id=int(img_id), category_id=cat_id+1, bbox=bbox, area=tw*th,
+                    iscrowd=0, segmentation=[])
                 ann_id += 1
                 annotations.append(ann)
     coco_data['annotations'] = annotations
