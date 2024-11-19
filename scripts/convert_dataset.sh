@@ -1,6 +1,6 @@
 #!/bin/bash
 
-WORK_MODE="check"
+WORK_MODE="yolo2coco"
 
 DATA_DIR="/data/ModelTrainData/GolfBall"
 DATASET_DIR="${DATA_DIR}/ezgolf/task_video_20241115151137473"
