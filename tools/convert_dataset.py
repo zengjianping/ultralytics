@@ -1,6 +1,7 @@
 import os, sys, math, copy
 import shutil, time, json
-import argparse, cv2
+import argparse, shutil
+import cv2, glob
 import numpy as np
 from pathlib import Path
 from collections import defaultdict
@@ -17,7 +18,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     data_dir = '/data/ModelTrainData/GolfBall'
     parser.add_argument('--work_mode', type=str, default='check')
-    parser.add_argument('--dataset_dir', type=str, default=f'{data_dir}/ezgolf/task_video_20241115151137473')
+    parser.add_argument('--dataset_dir', type=str, default=f'{data_dir}/ezgolf_task_20241117')
+    parser.add_argument('--sub_datasets', nargs='*', help='One or more sub datasets')
     args = parser.parse_args()
     return args
 
@@ -83,7 +85,7 @@ def convert_coco_to_yolo(dataset_dir):
         # Write
         txt_file:Path = (fn / file_name).with_suffix(".txt")
         txt_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(txt_file, "a") as file:
+        with open(txt_file, "w") as file:
             for i in range(len(bboxes)):
                 line = (*(bboxes[i]),)  # cls, box or segments
                 file.write(("%g " * len(line)).rstrip() % line + "\n")
@@ -150,6 +152,57 @@ def convert_yolo_to_coco(dataset_dir):
     json_str = json.dumps(coco_data, ensure_ascii=False, indent=None)
     open(result_json_file, 'w').write(json_str)
 
+def repair_dataset(dataset_dir):
+    for subset in ['train', 'val', 'test']:
+        label_dir = os.path.join(dataset_dir, subset, 'labels')
+        label_files = glob.glob(os.path.join(label_dir, '*.txt'))
+        for label_file in label_files:
+            rfile = open(label_file, 'r', encoding='utf-8')
+            labels = [x.split() for x in rfile.read().strip().splitlines() if len(x)]
+            labels = np.array(labels, dtype=np.float32)
+            rfile.close()
+            if any(labels[:,0] == 1):
+                print(subset, label_file)
+                print(labels)
+                wfile = open(label_file, "w", encoding='utf-8')
+                for i in range(len(labels)):
+                    box = [0] + labels[i,1:].tolist()
+                    line = (*box,)  # cls, box or segments
+                    wfile.write(("%g " * len(line)).rstrip() % line + "\n")
+
+def format_dir2file(dataset_dir):
+    dataset_path = Path(dataset_dir)
+    for subset in ['train', 'val', 'test']:
+        subset_dir = os.path.join(dataset_dir, subset)
+        if os.path.exists(subset_dir):
+            image_dir = os.path.join(subset_dir, 'images')
+            image_files = glob.glob(os.path.join(image_dir, '*.jpg'))
+            image_files += glob.glob(os.path.join(image_dir, '*.png'))
+            subset_file = os.path.join(dataset_dir, f'{subset}.txt')
+            wfile = open(subset_file, "w", encoding='utf-8')
+            for image_file in image_files:
+                wfile.write(f"./{Path(image_file).relative_to(dataset_path).as_posix()}" + "\n")
+
+def merge_datasets(dataset_dir, sub_datasets):
+    if sub_datasets is None:
+        return
+    os.makedirs(dataset_dir, exist_ok=True)
+    for subset in ['train', 'val', 'test']:
+        subset_file = os.path.join(dataset_dir, f'{subset}.txt')
+        yaml_file = os.path.join(dataset_dir, f'data.yaml')
+        wfile = open(subset_file, "w", encoding='utf-8')
+        for sub_dataset in sub_datasets:
+            if not os.path.isfile(yaml_file):
+                source_file = os.path.join(sub_dataset, f'data.yaml')
+                shutil.copyfile(source_file, yaml_file)
+            dataset_subset_file = os.path.join(sub_dataset, f'{subset}.txt')
+            if os.path.isfile(dataset_subset_file):
+                rfile = open(dataset_subset_file, 'r', encoding='utf-8')
+                file_names = [x.strip() for x in rfile.read().strip().splitlines() if len(x)]
+                file_names = [os.path.join(sub_dataset,x) for x in file_names if len(x)]
+                file_names = [os.path.abspath(x) for x in file_names if len(x)]
+                wfile.write('\n'.join(file_names) + '\n')
+        wfile.close()
 
 def main(args):
     if args.work_mode == 'split':
@@ -160,6 +213,12 @@ def main(args):
         convert_coco_to_yolo(args.dataset_dir)
     elif args.work_mode == 'yolo2coco':
         convert_yolo_to_coco(args.dataset_dir)
+    elif args.work_mode == 'repair':
+        repair_dataset(args.dataset_dir)
+    elif args.work_mode == 'dir2file':
+        format_dir2file(args.dataset_dir)
+    elif args.work_mode == 'merge':
+        merge_datasets(args.dataset_dir, args.sub_datasets)
     return True
 
 if __name__ == '__main__':
