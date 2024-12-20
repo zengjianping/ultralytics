@@ -12,11 +12,13 @@ from ultralytics import YOLO
 def parse_args():
     parser = argparse.ArgumentParser()
     data_dir = '/data/ModelTrainData/GolfBall'
-    parser.add_argument('--dataset_dir', type=str, default=f'{data_dir}/ezgolf/task_video_20241115151137473')
+    parser.add_argument('--dataset_dir', type=str, default=f'{data_dir}/hybrid_task_20241219')
+    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--imgsz', type=int, default=640)
     args = parser.parse_args()
     return args
 
-def train_model(dataset_dir):
+def train_model(dataset_dir, epochs, imgsz):
     # Load a model
     #model = YOLO("yolo11n.yaml")  # build a new model from YAML
     #model = YOLO("yolo11n.pt")  # load a pretrained model (recommended for training)
@@ -24,13 +26,13 @@ def train_model(dataset_dir):
 
     # Train the model
     data_file = os.path.join(dataset_dir, 'data.yaml')
-    results = model.train(data=data_file, epochs=100, imgsz=640)
+    results = model.train(data=data_file, epochs=epochs, imgsz=imgsz)
     print('RESULTS:\n', results)
 
     return True
 
 def main(args):
-    train_model(args.dataset_dir)
+    train_model(args.dataset_dir, args.epochs, args.imgsz)
 
 if __name__ == '__main__':
     args = parse_args()
