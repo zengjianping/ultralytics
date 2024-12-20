@@ -9,6 +9,72 @@ from .basetrack import TrackState
 from .utils import matching
 
 
+class BTrack(STrack):
+    def __init__(self, xywh, score, cls, min_activate_frames):
+        super().__init__(xywh, score, cls)
+        self.min_activate_frames = min_activate_frames
+
+    def activate(self, kalman_filter, frame_id):
+        """Activate a new tracklet using the provided Kalman filter and initialize its state and covariance."""
+        self.kalman_filter = kalman_filter
+        self.track_id = self.next_id()
+        self.mean, self.covariance = self.kalman_filter.initiate(self.convert_coords(self._tlwh))
+
+        self.tracklet_len = 0
+        self.state = TrackState.Tracked
+        if frame_id == 1 and self.min_activate_frames == 0:
+            self.is_activated = True
+        self.frame_id = frame_id
+        self.start_frame = frame_id
+
+    def re_activate(self, new_track, frame_id, new_id=False):
+        """Reactivates a previously lost track using new detection data and updates its state and attributes."""
+        self.mean, self.covariance = self.kalman_filter.update(
+            self.mean, self.covariance, self.convert_coords(new_track.tlwh)
+        )
+        self.tracklet_len = 0
+        self.state = TrackState.Tracked
+        if self.min_activate_frames == 0:
+            self.is_activated = True
+        self.frame_id = frame_id
+        if new_id:
+            self.track_id = self.next_id()
+        self.score = new_track.score
+        self.cls = new_track.cls
+        self.angle = new_track.angle
+        self.idx = new_track.idx
+
+    def update(self, new_track, frame_id):
+        """
+        Update the state of a matched track.
+
+        Args:
+            new_track (STrack): The new track containing updated information.
+            frame_id (int): The ID of the current frame.
+
+        Examples:
+            Update the state of a track with new detection information
+            >>> track = STrack([100, 200, 50, 80, 0.9, 1])
+            >>> new_track = STrack([105, 205, 55, 85, 0.95, 1])
+            >>> track.update(new_track, 2)
+        """
+        self.frame_id = frame_id
+        self.tracklet_len += 1
+
+        new_tlwh = new_track.tlwh
+        self.mean, self.covariance = self.kalman_filter.update(
+            self.mean, self.covariance, self.convert_coords(new_tlwh)
+        )
+        self.state = TrackState.Tracked
+        if self.tracklet_len >= self.min_activate_frames:
+            self.is_activated = True
+
+        self.score = new_track.score
+        self.cls = new_track.cls
+        self.angle = new_track.angle
+        self.idx = new_track.idx
+
+
 class BallTracker(BYTETracker):
     def get_dists(self, tracks, detections):
         """Calculates distances between tracks and detections using IoU and optionally ReID embeddings."""
@@ -140,6 +206,16 @@ class BallTracker(BYTETracker):
         if len(self.removed_stracks) > 1000:
             self.removed_stracks = self.removed_stracks[-999:]  # clip remove stracks to 1000 maximum
 
-        return np.asarray([x.result for x in self.tracked_stracks if x.is_activated], dtype=np.float32)
+        resuls = [x.result for x in self.tracked_stracks if x.is_activated]
+        #if self.args.output_lost_tracks:
+        #    resuls.extend([x.result for x in self.lost_stracks if x.is_activated])
+        resuls = np.asarray(resuls, dtype=np.float32)
+
+        return resuls
+
+    def init_track(self, dets, scores, cls, img=None):
+        """Initializes object tracking with given detections, scores, and class labels using the STrack algorithm."""
+        return [BTrack(xyxy, s, c, self.args.min_activate_frames) \
+                for (xyxy, s, c) in zip(dets, scores, cls)] if len(dets) else []  # detections
 
 
