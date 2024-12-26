@@ -1,7 +1,7 @@
 #!/bin/bash
 
-MODEL="/data/ProjectGolf/Projects/ultralytics/runs/detect/models/golf_ball/ezgolf_video_20241115151137473/weights/best.pt"
-SOURCE="/data/ModelTrainData/GolfBall/ezgolf/task_video_20241115151137473/images"
+MODEL="/home/ezgolf/ProjectGolf/Projects/ultralytics/runs/detect/models/golf_ball/hybrid_task_20241120/weights/best.pt"
+SOURCE="/data/ModelTrainData/GolfBall/ezgolf_task_20241219/images/video_20241219174915416"
 
 yolo predict \
     model="$MODEL" source="$SOURCE" \
