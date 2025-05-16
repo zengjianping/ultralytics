@@ -1,3 +1,5 @@
+// Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+
 // Giscus functionality
 function loadGiscus() {
   const giscusContainer = document.getElementById("giscus-container");
@@ -57,14 +59,17 @@ function setupGiscusLoader() {
   const giscusContainer = document.getElementById("giscus-container");
 
   if (giscusContainer) {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          loadGiscus();
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1 }); // Trigger when 10% of the element is visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            loadGiscus();
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1 },
+    ); // Trigger when 10% of the element is visible
 
     observer.observe(giscusContainer);
   }
