@@ -1,0 +1,15 @@
+{
+    "limit_class": false,
+    "class_map": {"person":0,"car":2,"plane":4},
+    "image_size": 640,
+    "thres_conf": 0.1,
+    "thres_iou": 0.5,
+    "max_det": 100,
+    "save_image": true,
+    "save_txt": false,
+    "save_conf": false,
+    "show_image": true,
+    "show_label": true,
+    "show_conf": true,
+    "verbose_mode": 0
+}

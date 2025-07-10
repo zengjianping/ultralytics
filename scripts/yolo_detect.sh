@@ -1,9 +1,11 @@
 #!/bin/bash
 
+#export PYTHONPATH=./:$PYTHONPATH
+
 CONFIG_FILE="configs/yolo_detect_config.json"
-MODEL_TYPE="yolo"
-MODEL_PATH="datas/models/yolov10m.pt"
-INPUT_PATH="datas/images/image03"
+MODEL_TYPE="ultralytics"
+MODEL_PATH="datas/models/rtdetr-l.pt"
+INPUT_PATH="datas/images/image01/team.jpg"
 
 python tools/yolo_detect.py \
     --config_file "$CONFIG_FILE" \
