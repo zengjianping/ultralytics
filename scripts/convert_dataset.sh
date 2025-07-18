@@ -2,18 +2,17 @@
 
 WORK_MODE="merge"
 
-DATA_DIR="/data/ModelTrainData/GolfBall"
-DATASET_DIR="${DATA_DIR}/hybrid_task_20241221"
+DATA_DIR="/data/Datasets/ModelTrainData/airport"
+DATASET_DIR="${DATA_DIR}/train_jobs/job_20250717"
 SUB_DATASETS="\
-    ${DATA_DIR}/roboflow_golf_ball.v3i \
-    ${DATA_DIR}/ezgolf_task_20241119 \
-    ${DATA_DIR}/ezgolf_task_20241218 \
-    ${DATA_DIR}/ezgolf_task_20241117 \
-    ${DATA_DIR}/ezgolf_task_20241219 \
+    ${DATA_DIR}/nanning/d2_ir/job_20250522 \
+    ${DATA_DIR}/nanning/d2_ir/job_20250603 \
 "
+CLASS_NAMES="aeroplane"
 
 python tools/convert_dataset.py \
     --work_mode $WORK_MODE \
     --dataset_dir $DATASET_DIR \
-    --sub_datasets $SUB_DATASETS
+    --sub_datasets $SUB_DATASETS \
+    --class_names "$CLASS_NAMES"
 

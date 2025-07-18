@@ -1,10 +1,10 @@
 #!/bin/bash
 
-MODEL="/home/ezgolf/ProjectGolf/Projects/ultralytics/runs/detect/models/golf_ball/hybrid_task_20241120/weights/best.pt"
-SOURCE="/data/ModelTrainData/GolfBall/ezgolf_task_20241219/images/video_20241219174915416"
+MODEL="runs/detect/airport_ir_r1/weights/best.pt"
+SOURCE="/data/Datasets/ModelTrainData/airport/nanning/d2_ir/job_20250522/images"
 
 yolo predict \
     model="$MODEL" source="$SOURCE" \
-    save=false show=false save_txt=true \
-    conf=0.1 iou=0.1 imgsz=640
+    save=false show=true save_txt=false \
+    conf=0.1 iou=0.5 imgsz=640,6144 line_width=2
 

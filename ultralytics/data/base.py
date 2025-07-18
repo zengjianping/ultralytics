@@ -76,6 +76,7 @@ class BaseDataset(Dataset):
         hyp: Dict[str, Any] = DEFAULT_CFG,
         prefix: str = "",
         rect: bool = False,
+        align_short: bool = False,
         batch_size: int = 16,
         stride: int = 32,
         pad: float = 0.5,
@@ -117,6 +118,7 @@ class BaseDataset(Dataset):
         self.update_labels(include_class=classes)  # single_cls and include_class
         self.ni = len(self.labels)  # number of images
         self.rect = rect
+        self.align_short = align_short
         self.batch_size = batch_size
         self.stride = stride
         self.pad = pad
@@ -238,7 +240,12 @@ class BaseDataset(Dataset):
                 raise FileNotFoundError(f"Image Not Found {f}")
 
             h0, w0 = im.shape[:2]  # orig hw
-            if rect_mode:  # resize long side to imgsz while maintaining aspect ratio
+            if rect_mode and self.align_short:  # resize short side to imgsz while maintaining aspect ratio
+                r = self.imgsz / min(h0, w0)  # ratio
+                if r != 1:  # if sizes are not equal
+                    w, h = (max(math.ceil(w0 * r), self.imgsz), max(math.ceil(h0 * r), self.imgsz))
+                    im = cv2.resize(im, (w, h), interpolation=cv2.INTER_LINEAR)
+            elif rect_mode:  # resize long side to imgsz while maintaining aspect ratio
                 r = self.imgsz / max(h0, w0)  # ratio
                 if r != 1:  # if sizes are not equal
                     w, h = (min(math.ceil(w0 * r), self.imgsz), min(math.ceil(h0 * r), self.imgsz))
@@ -370,6 +377,16 @@ class BaseDataset(Dataset):
                 shapes[i] = [maxi, 1]
             elif mini > 1:
                 shapes[i] = [1, 1 / mini]
+        
+        if self.align_short:
+            shapes = [[1, 1]] * nb
+            for i in range(nb):
+                ari = ar[bi == i]
+                mini, maxi = ari.min(), ari.max()
+                if maxi > 1:
+                    shapes[i] = [maxi, 1]
+                elif mini < 1:
+                    shapes[i] = [1, 1 / mini]
 
         self.batch_shapes = np.ceil(np.array(shapes) * self.imgsz / self.stride + self.pad).astype(int) * self.stride
         self.batch = bi  # batch index of image

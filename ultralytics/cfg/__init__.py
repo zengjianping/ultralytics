@@ -206,6 +206,7 @@ CFG_BOOL_KEYS = frozenset(
         "deterministic",
         "single_cls",
         "rect",
+        "align_short"
         "cos_lr",
         "overlap_mask",
         "val",

@@ -4,8 +4,9 @@
 
 CONFIG_FILE="configs/yolo_detect_config.json"
 MODEL_TYPE="ultralytics"
-MODEL_PATH="datas/models/rtdetr-l.pt"
-INPUT_PATH="datas/images/image01/team.jpg"
+MODEL_PATH="datas/models/yolov10m.pt"
+INPUT_PATH="datas/images/image00/small-vehicles1.jpeg"
+INPUT_PATH="/home/zengjianping/ProjectZKZS/Projects/sahi/datas/test_images/airport_nanning_d02_vis_01_unfold/"
 
 python tools/yolo_detect.py \
     --config_file "$CONFIG_FILE" \

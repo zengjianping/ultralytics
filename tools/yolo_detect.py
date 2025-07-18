@@ -49,7 +49,7 @@ def yolo_detect(input_path, model_type, model_path, config_file):
         classes=class_ids, imgsz=params.image_size, conf=params.thres_conf,
         iou=params.thres_iou, max_det=params.max_det, save=params.save_image,
         save_txt=params.save_txt, save_conf=params.save_conf, show=params.show_image,
-        show_labels=params.show_label, show_conf=params.show_conf)
+        show_labels=params.show_label, show_conf=params.show_conf, line_width=2)
     result_dir = results[0].save_dir
     
     print(f'Results saved in directory: {result_dir}')

@@ -3,34 +3,86 @@ import shutil, time, json
 import argparse, shutil
 import cv2, glob
 import numpy as np
+from os import path as osp
 from pathlib import Path
+from xml.dom import minidom
 from collections import defaultdict
 
 work_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, work_dir)
 
-from ultralytics.data.utils import autosplit, check_det_dataset
+from ultralytics.data.utils import check_det_dataset
+from ultralytics.data.split import autosplit
 from ultralytics.data.converter import convert_coco
 from ultralytics.utils import TQDM
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    data_dir = '/data/ModelTrainData/GolfBall'
+    data_dir = '/data/Datasets/ModelTrainData/airport/nanning'
     parser.add_argument('--work_mode', type=str, default='check')
-    parser.add_argument('--dataset_dir', type=str, default=f'{data_dir}/ezgolf_task_20241117')
+    parser.add_argument('--dataset_dir', type=str, default=f'{data_dir}/d2_ir/job_20250522')
     parser.add_argument('--sub_datasets', nargs='*', help='One or more sub datasets')
+    parser.add_argument('--class_names', type=str, help='class names')
     args = parser.parse_args()
     return args
 
 def split_dataset(dataset_dir):
     image_dir = os.path.join(dataset_dir, 'images')
-    autosplit(path=image_dir, weights=(0.9, 0.1, 0.0), annotated_only=False)
+    autosplit(path=image_dir, weights=(0.8, 0.2, 0.0), annotated_only=False)
 
 def check_dataset(dataset_dir):
     desc_file = os.path.join(dataset_dir, 'data.yaml')
     data = check_det_dataset(desc_file, autodownload=False)
     print(data)
+
+def convert_voc_to_yolo(dataset_dir, class_names:str='person'):
+    def convert_coordinates(size, box):
+        dw = 1.0 / size[0]
+        dh = 1.0 / size[1]
+        x = (box[0] + box[1]) / 2.0 * dw
+        y = (box[2] + box[3]) / 2.0 * dh
+        w = (box[1] - box[0]) * dw
+        h = (box[3] - box[2]) * dh
+        return (x,y,w,h)
+
+    class_map = dict()
+    for class_id, class_name in enumerate(class_names.split(',')):
+        class_map[class_name] = class_id
+
+    label_dir = os.path.join(dataset_dir, 'labels')
+    xml_files = glob.glob(osp.join(label_dir, '*.xml'))
+
+    for xml_file in TQDM(xml_files, desc=f"Annotations {label_dir}"):
+        label_file = xml_file.replace('.xml', '.txt')
+        wfile = open(label_file, "w")
+
+        xmldoc = minidom.parse(xml_file)
+        itemlist = xmldoc.getElementsByTagName('object')
+        size = xmldoc.getElementsByTagName('size')[0]
+        width = int((size.getElementsByTagName('width')[0]).firstChild.data)
+        height = int((size.getElementsByTagName('height')[0]).firstChild.data)
+
+        for item in itemlist:
+            # get class label
+            classid = (item.getElementsByTagName('name')[0]).firstChild.data
+            if classid in class_map:
+                label_str = str(class_map[classid])
+            else:
+                print("warning: label '%s' not in look-up table" % classid)
+                continue
+
+            # get bbox coordinates
+            xmin = ((item.getElementsByTagName('bndbox')[0]).getElementsByTagName('xmin')[0]).firstChild.data
+            ymin = ((item.getElementsByTagName('bndbox')[0]).getElementsByTagName('ymin')[0]).firstChild.data
+            xmax = ((item.getElementsByTagName('bndbox')[0]).getElementsByTagName('xmax')[0]).firstChild.data
+            ymax = ((item.getElementsByTagName('bndbox')[0]).getElementsByTagName('ymax')[0]).firstChild.data
+            box = (float(xmin), float(xmax), float(ymin), float(ymax))
+            box = convert_coordinates((width,height), box)
+            wfile.write(label_str + " " + " ".join([("%.6f" % a) for a in box]) + '\n')
+
+        wfile.close()
+
 
 def convert_coco_to_yolo(dataset_dir):
     # Create dataset directory
@@ -209,6 +261,8 @@ def main(args):
         split_dataset(args.dataset_dir)
     elif args.work_mode == 'check':
         check_dataset(args.dataset_dir)
+    elif args.work_mode == 'voc2yolo':
+        convert_voc_to_yolo(args.dataset_dir, args.class_names)
     elif args.work_mode == 'coco2yolo':
         convert_coco_to_yolo(args.dataset_dir)
     elif args.work_mode == 'yolo2coco':
