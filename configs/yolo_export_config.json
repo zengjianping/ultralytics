@@ -1,16 +1,17 @@
 {
     "format": "onnx",
-    "imgsz": 640,
+    "opset": 13,
+    "imgsz": "640",
     "optimize": false,
     "half": true,
-    "dynamic": false,
+    "dynamic": true,
     "simplify": true,
     "batch": 1,
     "nms": false,
     "conf": 0.1,
     "iou": 0.7,
     "agnostic_nms": false,
-    "limit_class": true,
+    "limit_class": false,
     "class_map": {"person":0,"car":2,"plane":4},
     "verbose_mode": 0
 }

@@ -35,9 +35,12 @@ def yolo_export(model_type, model_path, config_file):
             model.set_classes(names, model.get_text_pe(names))
     model.info()
 
+    imgsz = params.imgsz
+    if isinstance(imgsz, str):
+        imgsz = [int(s) for s in imgsz.split(',')]
     model.export(format=params.format, imgsz=params.imgsz, optimize=params.optimize,
         half=params.half, dynamic=params.dynamic, simplify=params.simplify, nms=params.nms,
-        conf=params.conf, iou=params.iou, agnostic_nms=params.agnostic_nms)
+        conf=params.conf, iou=params.iou, agnostic_nms=params.agnostic_nms, opset=params.opset)
 
 
 def main(args):
